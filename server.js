@@ -112,13 +112,19 @@ app.post("/generate-certificate", async (req, res) => {
 
     page.drawText(projectType, { x: 180, y: 180, size: 14, font });
     page.drawText(projectCode, { x: 180, y: 160, size: 14, font });
-    page.drawText(location, { x: 150, y: 140, size: 14, font });
+    const words = location.split(' ');
+    const truncatedLocation = words.length > 4 ? words.slice(0, 4).join(' ') + '...' : location;
+    page.drawText(truncatedLocation, { x: 150, y: 140, size: 14, font });
     page.drawText(latitude.toString(), { x: 126, y: 118, size: 12, font });
     page.drawText(longitude.toString(), { x: 270, y: 118, size: 12, font });
 
     // Add deceased name in correct position with bold styling
     const deceasedNameToUse = deceasedName || "KHAWJA SHAMIM AHMAD (LATE)";
-    page.drawText(deceasedNameToUse, { x: 310, y: 355, size: 16, font });
+    const textWidth = font.widthOfTextAtSize(deceasedNameToUse, 16);
+    const pageWidth = page.getWidth();
+    const centerX = pageWidth / 2;
+    const x = centerX - (textWidth / 2);
+    page.drawText(deceasedNameToUse, { x, y: 355, size: 16, font });
 
     const pdfBytes = await pdfDoc.save();
     res.setHeader("Content-Type", "application/pdf");
