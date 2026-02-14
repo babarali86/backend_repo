@@ -5,7 +5,6 @@ const fs = require("fs");
 const path = require("path");
 const { PDFDocument } = require("pdf-lib");
 const fontkit = require("@pdf-lib/fontkit");
-const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,6 +14,103 @@ app.use(express.json());
 
 // Serve static files from admin-web directory
 app.use(express.static(path.join(__dirname, "../admin-web")));
+
+// Data storage for submissions
+const SUBMISSIONS_FILE = path.join(__dirname, "submissions.json");
+
+// Helper function to read submissions
+function readSubmissions() {
+  try {
+    if (!fs.existsSync(SUBMISSIONS_FILE)) {
+      return [];
+    }
+    const data = fs.readFileSync(SUBMISSIONS_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading submissions:', error);
+    return [];
+  }
+}
+
+// Helper function to write submissions
+function writeSubmissions(submissions) {
+  try {
+    fs.writeFileSync(SUBMISSIONS_FILE, JSON.stringify(submissions, null, 2));
+  } catch (error) {
+    console.error('Error writing submissions:', error);
+  }
+}
+
+// Save submission endpoint
+app.post("/save-submission", async (req, res) => {
+  const {
+    projectType,
+    projectCode,
+    location,
+    latitude,
+    longitude,
+    deceasedName,
+  } = req.body;
+
+  if (
+    !projectType ||
+    !projectCode ||
+    !latitude ||
+    !longitude ||
+    !deceasedName
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "All required fields are missing. Please check: Project Type, Project Code, Latitude, Longitude, Donated By",
+    });
+  }
+
+  try {
+    const submissions = readSubmissions();
+    const newSubmission = {
+      id: Date.now().toString(),
+      projectType,
+      projectCode,
+      location,
+      latitude,
+      longitude,
+      deceasedName,
+      createdAt: new Date().toISOString(),
+    };
+
+    submissions.push(newSubmission);
+    writeSubmissions(submissions);
+
+    res.status(200).json({
+      success: true,
+      message: "Submission saved successfully",
+      submissionId: newSubmission.id,
+    });
+  } catch (error) {
+    console.error("Save submission error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to save submission",
+    });
+  }
+});
+
+// Get submissions endpoint
+app.get("/submissions", (req, res) => {
+  try {
+    const submissions = readSubmissions();
+    res.status(200).json({
+      success: true,
+      submissions: submissions.reverse(), // Most recent first
+    });
+  } catch (error) {
+    console.error("Get submissions error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get submissions",
+    });
+  }
+});
 
 /**
  * POST: /reverse-geocode
@@ -113,9 +209,7 @@ app.post("/generate-certificate", async (req, res) => {
 
     page.drawText(projectType, { x: 180, y: 180, size: 14, font });
     page.drawText(projectCode, { x: 180, y: 160, size: 14, font });
-    const words = location.split(' ');
-    const truncatedLocation = words.length > 4 ? words.slice(0, 4).join(' ') + '...' : location;
-    page.drawText(truncatedLocation, { x: 150, y: 140, size: 14, font });
+    // page.drawText(location, { x: 150, y: 140, size: 14, font }); // Removed location from PDF
     page.drawText(latitude.toString(), { x: 126, y: 118, size: 12, font });
     page.drawText(longitude.toString(), { x: 270, y: 118, size: 12, font });
 
