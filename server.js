@@ -12,6 +12,11 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Welcome route
+app.get('/', (req, res) => {
+  res.send('Welcome to the backend server!');
+});
+
 // Serve static files from admin-web directory
 app.use(express.static(path.join(__dirname, "../admin-web")));
 

@@ -1,17 +1,3 @@
-const express = require('express');
-const cors = require('cors');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(cors());
-app.use(express.json());
-
-app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to our project' });
-});
-
-app.listen(PORT, () => {
-  console.log('simple welcome to our project');
-  console.log(`Server running on port ${PORT}`);
-});
+// Main entry point for the application
+// Import and start the server
+require('./server.js');
